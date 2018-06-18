@@ -10,6 +10,9 @@ import java.util.regex.Pattern;
 import cn.edu.hfut.dmic.webcollector.model.CrawlDatums;
 import cn.edu.hfut.dmic.webcollector.model.Page;
 import cn.edu.hfut.dmic.webcollector.plugin.berkeley.BreadthCrawler;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.commons.io.FileUtils;
 import org.json.*;
 
@@ -65,7 +68,7 @@ public class GetAllSongs extends BreadthCrawler {
 	/**
 	 * songId, songName, songSinger, url, mp3Url
 	 */
-	String songInfoModel = "%s,%s,%s,%s,%s";
+	String songInfoModel = "%s,%s,%s,%s,%s\r\n";
 
 //	File csvFile = new File(this.getClass().getResource("").getPath());
 	File csvFile = new File("D:/songs.csv");
@@ -110,9 +113,9 @@ public class GetAllSongs extends BreadthCrawler {
 			System.out.println("ID:" + songId);	
 			infoUrl = "http://music.163.com/api/song/detail/?id=" + songId + "&ids=%5B+" + songId + "%5D";
 			try {
-				URL urlObject = new URL(infoUrl);
+				//URL urlObject = new URL(infoUrl);
 				// 获取json源码
-				String urlsource = getURLSource(urlObject);
+				String urlsource = getHttpResponse(infoUrl);
 				JSONObject j = new JSONObject(urlsource);
 				JSONArray a = (JSONArray) j.get("songs");
 				JSONObject aa = (JSONObject) a.get(0);
@@ -125,7 +128,7 @@ public class GetAllSongs extends BreadthCrawler {
 			String songInfo = String.format(songInfoModel,contents);
 			try {
 				System.out.println("");
-				FileUtils.writeStringToFile(csvFile,songInfo,"utf-8",true);
+				FileUtils.writeStringToFile(csvFile,songInfo,"gbk",true);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -141,8 +144,9 @@ public class GetAllSongs extends BreadthCrawler {
 	 */
 	public static void main(String[] args) throws Exception {
 		//URL url = new URL("http://music.163.com/api/song/detail/?id=110411&ids=%5B110411%5D");
-		URL url = new URL("http://music.163.com/api/song/detail/?id=110411&ids=%5B110411%5D");
-		String urlsource = getURLSource(url);
+		String urlStr = "http://music.163.com/api/song/detail/?id=210049&ids=[210049]";
+		URL url = new URL("http://music.163.com/api/song/detail/?id=210049&ids=[210049]");
+		String urlsource = getHttpResponse(urlStr);
 		System.out.println(urlsource);
 		JSONObject j = new JSONObject(urlsource);
 		JSONArray a = (JSONArray) j.get("songs");
@@ -162,5 +166,23 @@ public class GetAllSongs extends BreadthCrawler {
 		crawler.setResumable(false);
 		// 设置爬虫深度
 		crawler.start(5);
+	}
+
+	static OkHttpClient client = new OkHttpClient();
+
+	public static String getHttpResponse(String url) throws IOException {
+		Request request = new Request.Builder()
+				//.url("http://music.163.com/api/song/detail/?id=210049&ids=[210049]")
+				.url(url)
+				.get()
+				.build();
+
+		Response response =  client.newCall(request).execute();
+		String result = response.body().string();
+		System.out.println(response.isSuccessful());
+		if(response.isSuccessful()){
+			System.out.println(result);
+		}
+		return result;
 	}
 }
